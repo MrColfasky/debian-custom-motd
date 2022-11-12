@@ -1,0 +1,64 @@
+#!/bin/sh
+
+#
+# Copyright 2022 sec303mrc
+#
+# run-parts /etc/update-motd.d/ > /dev/null
+#
+
+
+displayBar(){
+	printf "\e[1;30m[ \e[38;5;88m"
+	for x in `seq 1 50` ; do
+        	newX=$((x*2-1))
+        	if [ "$1" -gt "$newX" ] ; then
+                	printf "#"
+        	else
+                	printf "\e[1;30m-"
+        	fi
+	done ; printf " \e[1;30m]"
+	echo
+}
+
+upSeconds="$(/usr/bin/cut -d. -f1 /proc/uptime)"
+secs=$((${upSeconds}%60))
+mins=$((${upSeconds}/60%60))
+hours=$((${upSeconds}/3600%24))
+days=$((${upSeconds}/86400))
+totalMem=$(free | grep Mem | awk '{ printf("%.0f", $2/1024) }')
+usedMem=$(free | grep Mem | awk '{ printf("%.0f", $3/1024) }')
+uptime=`printf "%d dni, %02dh%02dm%02ds" "$days" "$hours" "$mins" "$secs"`
+ipv6=$(ip addr show dev eth0 | sed -e's/^.*inet6 \([^ ]*\)\/.*$/\1/;t;d' | grep 2001)
+ipv4=$(ip a | grep glo | awk '{print $2}' | head -1 | cut -f1 -d/)
+read one five fifteen rest < /proc/loadavg
+
+
+echo "\033[1;31m  @@@@@@   @@@@@@@@   @@@@@@@  @@@@@@    @@@@@@@@   @@@@@@   @@@@@@@@@@   @@@@@@@    @@@@@@@  ";
+echo "\033[1;31m @@@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@  @@@@@@@@@@  @@@@@@@  @@@@@@@@@@@  @@@@@@@@  @@@@@@@@    `uname -srm`$(tput setaf 1)";
+echo "\033[1;31m !@@       @@!       !@@           @@@  @@!   @@@@      @@@  @@! @@! @@!  @@!  @@@  !@@         UpTime: ${uptime}"
+echo "\033[1;31m !@!       !@!       !@!           @!@  !@!  @!@!@      @!@  !@! !@! !@!  !@!  @!@  !@!         IPv4: ${ipv4}";
+echo "\033[1;31m !!@@!!    @!!!:!    !@!       @!@!!@   @!@ @! !@!  @!@!!@   @!! !!@ @!@  @!@!!@!   !@!         IPv6: ${ipv6}";
+echo "\033[1;31m  !!@!!!   !!!!!:    !!!       !!@!@!   !@!!!  !!!  !!@!@!   !@!   ! !@!  !!@!@!    !!!         Load: ${one}, ${fifteen} (1, 15 min)";
+echo "\033[1;31m      !:!  !!:       :!!           !!:  !!:!   !!!      !!:  !!:     !!:  !!: :!!   :!!       ";
+echo "\033[1;31m     !:!   :!:       :!:           :!:  :!:    !:!      :!:  :!:     :!:  :!:  !:!  :!:       ";
+echo "\033[1;31m :::: ::    :: ::::   ::: :::  :: ::::  ::::::: ::  :: ::::  :::     ::   ::   :::   ::: :::  ";
+echo "\033[1;31m :: : :    : :: ::    :: :: :   : : :    : : :  :    : : :    :      :     :   : :   :: :: :  ";
+
+
+
+
+
+
+cpu=$(printf "%0.f" $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}'))
+ram=$(free | grep Mem | awk '{ printf("%.0f", $3/$2 * 100.0) }')
+
+echo "\e[1;30m» \e[1;37mUżycie Procesora: \e[1;34m${cpu}%"
+displayBar $cpu
+echo "\e[1;30m» \e[1;37mUżycie RAM: \e[1;34m${ram}%"
+displayBar $ram
+disk=$(df /dev/sda1 | grep sda1 | awk '{ printf("%i", $3/$2*100) }')
+diskFull=$(df /dev/sda1 | grep sda1 | awk '{ printf("%0.f GB / %0.f GB", $3/1000/1024, $2/1000/1024) }')
+echo "\e[1;30m» \e[1;37mUżycie Dysku sda1: \e[1;34m${diskFull}"
+displayBar $disk
+
+printf "\n\e[38;5;247m"
